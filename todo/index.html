@@ -6,7 +6,7 @@
   <title>Todo</title>
   <style>
     body { font-family: system-ui, sans-serif; max-width: 36rem; margin: 2rem auto; padding: 0 1rem; }
-    form, .filters { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    form, .filters { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
     input, select { padding: 0.5rem; }
     #title, #tags { flex: 1; min-width: 8rem; }
     button { padding: 0.5rem 0.75rem; }
@@ -16,6 +16,8 @@
     .body { flex: 1; min-width: 0; }
     .title { overflow-wrap: anywhere; }
     .meta { color: #555; font-size: 0.9rem; margin-top: 0.2rem; }
+    .actions { display: flex; flex-direction: column; gap: 0.25rem; }
+    .edit-series { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.25rem; }
     .empty, .error { color: #666; }
     .error { color: #8a1f1f; }
   </style>
@@ -26,6 +28,7 @@
     <input id="title" name="title" type="text" maxlength="200" required placeholder="New task" autocomplete="off">
     <input id="due" name="due" type="date" aria-label="Due date">
     <input id="tags" name="tags" type="text" maxlength="200" placeholder="Tags, comma separated" autocomplete="off">
+    <label><input id="repeat-daily" type="checkbox"> Repeats daily</label>
     <button type="submit">Add</button>
   </form>
   <div class="filters">
@@ -45,218 +48,6 @@
   <p id="empty" class="empty" hidden>No tasks yet.</p>
   <p id="error" class="error" hidden></p>
   <ul id="list"></ul>
-  <script>
-    const DB_NAME = "todo";
-    const STORE = "tasks";
-    let tasks = [];
-
-    function openDb() {
-      return new Promise((resolve, reject) => {
-        const req = indexedDB.open(DB_NAME, 1);
-        req.onupgradeneeded = () => {
-          const db = req.result;
-          if (!db.objectStoreNames.contains(STORE)) {
-            db.createObjectStore(STORE, { keyPath: "id", autoIncrement: true });
-          }
-        };
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
-      });
-    }
-
-    function requestDone(req) {
-      return new Promise((resolve, reject) => {
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
-      });
-    }
-
-    const dbPromise = openDb();
-
-    async function withStore(mode, fn) {
-      const db = await dbPromise;
-      const tx = db.transaction(STORE, mode);
-      const result = await fn(tx.objectStore(STORE));
-      await new Promise((resolve, reject) => {
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-        tx.onabort = () => reject(tx.error);
-      });
-      return result;
-    }
-
-    function showError(err) {
-      const node = document.getElementById("error");
-      node.textContent = err ? "Could not save the task. Try again." : "";
-      node.hidden = !err;
-    }
-
-    function parseTags(value) {
-      const seen = new Set();
-      const tags = [];
-      for (const part of String(value || "").split(",")) {
-        const tag = part.trim().slice(0, 40);
-        const key = tag.toLowerCase();
-        if (!tag || seen.has(key)) continue;
-        seen.add(key);
-        tags.push(tag);
-        if (tags.length === 8) break;
-      }
-      return tags;
-    }
-
-    function parseDue(value) {
-      return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : "";
-    }
-
-    function taskTags(task) {
-      return Array.isArray(task.tags) ? task.tags.filter((tag) => typeof tag === "string") : [];
-    }
-
-    function visibleTasks() {
-      const status = document.getElementById("status-filter").value;
-      const tag = document.getElementById("tag-filter").value;
-      return tasks.filter((task) => {
-        if (status === "open" && task.done) return false;
-        if (status === "done" && !task.done) return false;
-        if (tag && !taskTags(task).some((item) => item.toLowerCase() === tag)) return false;
-        return true;
-      });
-    }
-
-    function fillTagFilter() {
-      const select = document.getElementById("tag-filter");
-      const current = select.value;
-      const names = new Map();
-      for (const task of tasks) {
-        for (const tag of taskTags(task)) {
-          const key = tag.toLowerCase();
-          if (!names.has(key)) names.set(key, tag);
-        }
-      }
-      select.replaceChildren();
-      const all = document.createElement("option");
-      all.value = "";
-      all.textContent = "All tags";
-      select.append(all);
-      for (const [key, label] of [...names.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
-        const option = document.createElement("option");
-        option.value = key;
-        option.textContent = label;
-        select.append(option);
-      }
-      select.value = names.has(current) || current === "" ? current : "";
-    }
-
-    function render() {
-      fillTagFilter();
-      const shown = visibleTasks();
-      const list = document.getElementById("list");
-      const empty = document.getElementById("empty");
-      list.replaceChildren();
-      empty.hidden = shown.length > 0;
-      empty.textContent = tasks.length === 0 ? "No tasks yet." : "No tasks match these filters.";
-      for (const task of shown) {
-        const item = document.createElement("li");
-        if (task.done) item.className = "done";
-
-        const check = document.createElement("input");
-        check.type = "checkbox";
-        check.checked = Boolean(task.done);
-        check.setAttribute("aria-label", task.done ? "Mark not done" : "Mark done");
-        check.addEventListener("change", () => setDone(task.id, check.checked));
-
-        const body = document.createElement("div");
-        body.className = "body";
-        const title = document.createElement("div");
-        title.className = "title";
-        title.textContent = task.title;
-        body.append(title);
-
-        const due = parseDue(task.due || "");
-        const tags = taskTags(task);
-        if (due || tags.length) {
-          const meta = document.createElement("div");
-          meta.className = "meta";
-          const bits = [];
-          if (due) bits.push("Due " + due);
-          if (tags.length) bits.push(tags.join(", "));
-          meta.textContent = bits.join(" · ");
-          body.append(meta);
-        }
-
-        const remove = document.createElement("button");
-        remove.type = "button";
-        remove.textContent = "Delete";
-        remove.addEventListener("click", () => removeTask(task.id));
-
-        item.append(check, body, remove);
-        list.append(item);
-      }
-    }
-
-    async function load() {
-      tasks = await withStore("readonly", (store) => requestDone(store.getAll()));
-      tasks.sort((a, b) => a.id - b.id);
-      render();
-    }
-
-    async function addTask(title, due, tags) {
-      const clean = title.trim();
-      if (!clean) return;
-      await withStore("readwrite", (store) => requestDone(store.add({
-        title: clean,
-        done: false,
-        due: parseDue(due),
-        tags: parseTags(tags)
-      })));
-      await load();
-    }
-
-    async function setDone(id, done) {
-      await withStore("readwrite", (store) => new Promise((resolve, reject) => {
-        const getReq = store.get(id);
-        getReq.onsuccess = () => {
-          const task = getReq.result;
-          if (!task) {
-            resolve();
-            return;
-          }
-          task.done = done;
-          const putReq = store.put(task);
-          putReq.onsuccess = () => resolve();
-          putReq.onerror = () => reject(putReq.error);
-        };
-        getReq.onerror = () => reject(getReq.error);
-      }));
-      await load();
-    }
-
-    async function removeTask(id) {
-      await withStore("readwrite", (store) => requestDone(store.delete(id)));
-      await load();
-    }
-
-    document.getElementById("add-form").addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const title = document.getElementById("title");
-      const due = document.getElementById("due");
-      const tags = document.getElementById("tags");
-      try {
-        showError(null);
-        await addTask(title.value, due.value, tags.value);
-        title.value = "";
-        due.value = "";
-        tags.value = "";
-        title.focus();
-      } catch (err) {
-        showError(err);
-      }
-    });
-
-    document.getElementById("status-filter").addEventListener("change", render);
-    document.getElementById("tag-filter").addEventListener("change", render);
-    load().catch(showError);
-  </script>
+  <script type="module" src="./app.js"></script>
 </body>
 </html>

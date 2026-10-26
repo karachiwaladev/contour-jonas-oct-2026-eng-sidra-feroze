@@ -75,6 +75,14 @@ Implement in the workspace. One project, one folder. Keep `CLAUDE.md` index rows
 
 Use a **feature branch** for the ticket (for example `issue-<n>-short-slug`), not the default branch, so a pull request can be opened later. Create the branch before or when you start implementation.
 
+**Engineering standards (build tickets):**
+
+- **Modularity:** Avoid god objects. Split pure logic, storage, and UI across files inside the project folder (for example `lib/` + thin entry script).
+- **TDD:** For domain logic, add failing tests first (for example `node --test` under the project), then implement until green.
+- **Security:** OWASP-oriented sanity on new code (injection, XSS, unsafe storage). Use the **Security Review** subagent when the change handles auth, secrets, or non-trivial user input paths.
+- **Code review:** Before **§6**, run **Bugbot** on branch changes (see user skill `review-bugbot` / Task description `Bugbot`).
+- **Documentation:** Add or update `IMPLEMENTATION.md` (or project README) with data model, behavior, and how to verify.
+
 ### 5. Run and verify in the browser
 
 Use the Cursor browser MCP (Chrome DevTools-backed): navigate, interact, snapshot, `browser_take_screenshot`, and `browser_cdp` when you need DOM or runtime checks.
