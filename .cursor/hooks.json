@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "hooks": {
+    "stop": [
+      {
+        "command": ".cursor/hooks/log-prompts.ps1",
+        "timeout": 20
+      },
+      {
+        "command": ".cursor/hooks/commit-push.ps1",
+        "timeout": 120
+      }
+    ]
+  }
+}

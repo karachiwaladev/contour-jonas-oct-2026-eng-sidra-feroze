@@ -1,0 +1,187 @@
+---
+name: factory-loop
+description: >-
+  Work Software Factories tickets from GitHub issues: clarify, plan, build on a
+  feature branch, browser-verify, open a PR, wait for manual review, then close.
+  Use for factory loop or processing open issues in this training repo.
+disable-model-invocation: true
+---
+
+# Factory loop
+
+Tickets are GitHub issues on the repo in the current workspace. Work each open issue, then stop. Do not invent extra tickets.
+
+**Build tickets do not close until a PR is reviewed and approved** (and merged when that is your gate). Opening the PR and commenting on the issue is mandatory; `answered` and **Close as completed** come only after approval.
+
+Publishing: on every agent **stop**, project hooks commit tracked changes and push to `origin`. During the loop, stay on the ticket’s **feature branch** so the stop hook pushes there. When opening a PR, ensure the branch is pushed; you may commit on that branch if the hook has not run yet and the user asked for a PR.
+
+## Resolve the repo and gh
+
+1. Repo: `git remote get-url origin`. Use that `owner/repo` for every GitHub call.
+2. `gh` may be missing from PATH. Use `gh` if it exists, otherwise `C:\Program Files\GitHub CLI\gh.exe` on Windows.
+3. Read with `gh`. A fine-grained token often can list and view issues, then fail writes with `Resource not accessible by personal access token`. That token only covers repos owned by the signed-in user. This training repo is owned by someone else.
+4. On that 403, do the rest of the writes in the browser while the user is signed in to GitHub. Do not ask for a password or token. If the browser is on the sign-in page, stop and ask them to sign in.
+
+## Safety — no destructive actions
+
+Do the ticket work in the repo. Never take destructive or irreversible actions, including:
+
+- `git push --force`, `git reset --hard`, `git clean -fd`, branch deletes, or rewriting history
+- Deleting files, folders, or projects unless the issue explicitly asks to remove that exact path
+- Wiping user data, databases, or issue comments outside the normal close workflow
+- Committing secrets (`.env`, credentials, tokens, real keys)
+
+Prefer additive changes: create or extend files and project folders. Update `CLAUDE.md` when you add or rename a project.
+
+## Ticket kinds
+
+Read the title and body. Classify the ticket:
+
+- **Build or feature** — asks for code, docs, hooks, skills, a new project folder, or changes inside an existing project.
+- **Factual only** — asks a question with no repo deliverable.
+
+Use the matching workflow below. Do not skip clarify, plan, browser verification, or **§6 pull request** on build tickets. Never close a build ticket without an approved PR (unless the user explicitly overrides in chat).
+
+## Build or feature tickets
+
+Do not guess when requirements, scope, UX, or acceptance criteria are unclear.
+
+### 1. Signal
+
+Add an 👀 reaction on the issue. If it is already there, leave it.
+
+### 2. Clarify
+
+List open assumptions as concrete questions.
+
+- **User is in the chat:** ask those questions here and wait for answers. Do not implement yet.
+- **Loop or issue-only context:** post the questions as an issue **Comment**. Leave the issue **open**. Stop until the issue thread or the user answers.
+
+If the issue body already specifies everything (scope, folder, behavior), say so briefly in the plan and continue.
+
+### 3. Plan and approval
+
+Write a short plan: scope, files or folders, main behavior, and how you will verify in the browser.
+
+- **User is in the chat:** present the plan and wait for explicit approval before coding.
+- **Issue thread:** post the plan as a **Comment** and wait for an approval reply on the issue (for example “approved” or “go ahead”) unless the ticket author already gave full acceptance criteria in the body.
+
+Do not write implementation code until approval is clear.
+
+### 4. Build
+
+Implement in the workspace. One project, one folder. Keep `CLAUDE.md` index rows in sync with new or renamed projects.
+
+Use a **feature branch** for the ticket (for example `issue-<n>-short-slug`), not the default branch, so a pull request can be opened later. Create the branch before or when you start implementation.
+
+### 5. Run and verify in the browser
+
+Use the Cursor browser MCP (Chrome DevTools-backed): navigate, interact, snapshot, `browser_take_screenshot`, and `browser_cdp` when you need DOM or runtime checks.
+
+- Static HTML under `todo/` or similar: serve over `http://127.0.0.1:<port>/` (for example a short `node` static server). `file://` is blocked in the automation browser.
+- Exercise the paths the ticket cares about: create, update, filter, persist after reload, error cases when relevant.
+- Capture at least one screenshot that shows the feature working. Use fresh screenshots immediately before any coordinate click.
+
+### 6. Open a pull request (before closing the issue)
+
+After build and browser verification:
+
+1. Ensure the ticket work is **committed** on the feature branch. Rely on the stop hook to commit and push when possible; if the hook has not run yet, ask the user before pushing, or wait for the next stop.
+2. **Push** the feature branch to `origin` if it is not on the remote yet (`git push -u origin HEAD`). On `gh` write 403, push from the terminal if credentials work, or ask the user to push.
+3. **Create a PR** into the repo default branch (`main` / `master`). Prefer `gh pr create` with title/body linking the issue (for example `Closes #<n>` or `Fixes #<n>` only when you are about to close after merge). On 403, create the PR in the browser.
+4. Post an issue **Comment** with the **PR URL**, a short summary of changes, and how you verified. **Attach verification screenshot(s)** to that comment when you can (browser: **Paste, drop, or click to add files**). Do not close the issue yet.
+
+**Wait for manual review and approval** on the PR (review comments addressed, approval given, or merge completed — whichever the repo expects). Leave the issue **open** while the PR is pending.
+
+- **User in chat:** stop after the PR comment and wait until they say the PR is approved or merged.
+- **Loop / issue-only:** on later ticks, skip this issue until the PR is approved or merged, or until there is an explicit approval comment on the issue or PR.
+
+Do not apply `answered` or close the issue until the PR step is approved.
+
+### 7. Close the ticket on GitHub
+
+Run this step **only after** the pull request has passed manual review (and merge, if your process requires it).
+
+Post a **final Comment** if anything changed since the PR comment (optional if the PR comment already covers verification). **Attach screenshot(s)** when the skill requires proof on the ticket.
+
+Apply the `answered` label, dismiss the label menu so it saves, then **Close issue** → **Close as completed** with an empty comment box. Do not use **Close with comment** for the verification post.
+
+Verify with `gh issue view <n> --json state,stateReason,labels,comments` and `gh pr view` (or the PR page) that the PR state matches your process.
+
+## Factual-only tickets
+
+1. **Signal** — 👀 on the issue.
+2. **Answer** — check the fact before writing. No repo changes.
+3. **Comment**, **answered** label, **close as completed**, **verify** with `gh` as below.
+
+## Comment shape
+
+**Build or feature (PR ready — issue stays open):**
+
+```markdown
+Pull request: <PR URL>
+
+<What was built or changed, and where to open or run it.>
+
+<How you verified in the browser; mention reload or filter behavior when relevant.>
+
+<Screenshot(s) attached below when possible.>
+
+Awaiting manual PR review before this issue is closed.
+```
+
+**Build or feature (final close comment, after PR approval):**
+
+```markdown
+<PR merged or approved — optional one-line pointer to the PR URL.>
+
+<What shipped; where to open or run it if not obvious from the PR.>
+```
+
+**Clarifying questions (issue left open):**
+
+```markdown
+I have a few questions before implementing:
+
+1. ...
+2. ...
+```
+
+**Plan awaiting approval:**
+
+```markdown
+## Plan
+
+- ...
+- ...
+
+Reply here when you approve and I will implement.
+```
+
+**Factual question only:**
+
+```markdown
+<Direct answer.>
+
+<One or two sentences with the figure or source that supports it, and the common mix-up when there is one.>
+```
+
+## Browser writes on GitHub
+
+Issue URL: `https://github.com/<owner>/<repo>/issues/<n>`
+
+- **Issue number vs ticket title:** GitHub issue `#n` is not always the same as “Ticket #N” in the title (for example “Ticket #4” may be issue `#5`). Use `gh issue list` / the issue title to pick the right `#n`.
+- React: open **React**, choose 👀.
+- Comment: fill **Add a comment**, attach screenshot files when closing build tickets, click **Comment**. For React-controlled textareas, use `browser_type` or set `HTMLTextAreaElement` value via the native setter and dispatch an `input` event — plain `textarea.value = …` can submit as `undefined`.
+- Label: **Edit Labels**, filter `answered`, check **answered** (create if missing), then dismiss the menu so the label saves.
+- Close: post the verification **Comment** first (with screenshot). Leave the comment box empty, then **Close issue** → **Close as completed**. Do not use **Close with comment** for the verification post. Stop when the control says **Reopen issue**.
+- If the comment composer fails to load, reload the issue page before commenting.
+
+## Loop behavior on build tickets
+
+On each factory-loop tick, read open issues in number order. Skip closed issues.
+
+- If your last comment on an issue was **questions** or a **plan** and there is no approval or answer yet, skip that issue.
+- If you already opened a **PR** for the issue and commented with the PR link, skip until the PR is **approved or merged**, or until the user or issue thread gives explicit go-ahead to close.
+- If the PR is approved or merged, run **§7 Close the ticket** (and skip back to build unless follow-up work is requested).
+- Otherwise run the full build workflow for the oldest actionable issue, one issue per tick when possible.
