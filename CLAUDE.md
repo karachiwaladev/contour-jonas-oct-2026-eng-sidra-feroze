@@ -1,6 +1,6 @@
 # Software factory
 
-This repo is a software factory. Tickets arrive as GitHub issues. The factory loop picks up each open issue, does the work, and closes it. We build and improve the loop. Features live in their own project folders.
+This repo is a software factory. Tickets arrive as GitHub issues. The factory loop picks up each open issue, does the work, opens a pull request, and waits for manual review before closing the issue. We build and improve the loop. Features live in their own project folders.
 
 ## Progressive disclosure
 

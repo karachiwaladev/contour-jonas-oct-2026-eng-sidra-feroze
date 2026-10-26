@@ -20,7 +20,8 @@ Publishing: on every agent **stop**, project hooks commit tracked changes and pu
 1. Repo: `git remote get-url origin`. Use that `owner/repo` for every GitHub call.
 2. `gh` may be missing from PATH. Use `gh` if it exists, otherwise `C:\Program Files\GitHub CLI\gh.exe` on Windows.
 3. Read with `gh`. A fine-grained token often can list and view issues, then fail writes with `Resource not accessible by personal access token`. That token only covers repos owned by the signed-in user. This training repo is owned by someone else.
-4. On that 403, do the rest of the writes in the browser while the user is signed in to GitHub. Do not ask for a password or token. If the browser is on the sign-in page, stop and ask them to sign in.
+4. **Git push** needs **Contents: Read and write** on the repo you push to (upstream or your fork). Issue-only token scope causes `Permission denied` on `git push` even when the browser can comment on issues. Ask the user to widen the token or push once from Git Credential Manager, then continue with `gh pr create` or the browser.
+5. On other GitHub write 403s, do the rest in the browser while the user is signed in. Do not ask for a password or token. If the browser is on the sign-in page, stop and ask them to sign in.
 
 ## Safety — no destructive actions
 
