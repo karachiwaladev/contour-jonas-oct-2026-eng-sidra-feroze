@@ -1,5 +1,11 @@
 import { applyDailyComplete, formatDateISO, isDailySeries } from "./lib/recurrence.js";
 import {
+  comparePriority,
+  matchesPriorityFilter,
+  parsePriority,
+  taskPriority,
+} from "./lib/priority.js";
+import {
   normalizeTitle,
   parseDue,
   parseRepeat,
@@ -30,12 +36,35 @@ function showError(err) {
 function visibleTasks() {
   const status = document.getElementById("status-filter").value;
   const tag = document.getElementById("tag-filter").value;
-  return tasks.filter((task) => {
-    if (status === "open" && task.done) return false;
-    if (status === "done" && !task.done) return false;
-    if (tag && !taskTags(task).some((item) => item.toLowerCase() === tag)) return false;
-    return true;
-  });
+  const priority = document.getElementById("priority-filter").value;
+  return tasks
+    .filter((task) => {
+      if (status === "open" && task.done) return false;
+      if (status === "done" && !task.done) return false;
+      if (tag && !taskTags(task).some((item) => item.toLowerCase() === tag)) return false;
+      if (!matchesPriorityFilter(task, priority)) return false;
+      return true;
+    })
+    .sort(comparePriority);
+}
+
+function priorityLabel(value) {
+  const key = parsePriority(value);
+  return key.charAt(0).toUpperCase() + key.slice(1);
+}
+
+function prioritySelect(id, selected, ariaLabel) {
+  const select = document.createElement("select");
+  select.id = id || "";
+  select.setAttribute("aria-label", ariaLabel);
+  for (const value of ["high", "medium", "low"]) {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = priorityLabel(value);
+    select.append(option);
+  }
+  select.value = parsePriority(selected);
+  return select;
 }
 
 function fillTagFilter() {
@@ -67,7 +96,7 @@ function buildEditForm(task) {
   form.className = "edit-series";
   form.addEventListener("submit", (e) => {
     e.preventDefault();
-    saveSeriesEdit(task.id, titleInput, dueInput, tagsInput, repeatCheck);
+    saveSeriesEdit(task.id, titleInput, dueInput, tagsInput, repeatCheck, priorityInput);
   });
 
   const titleInput = document.createElement("input");
@@ -89,6 +118,8 @@ function buildEditForm(task) {
   tagsInput.placeholder = "Tags";
   tagsInput.setAttribute("aria-label", "Series tags");
 
+  const priorityInput = prioritySelect("", taskPriority(task), "Series priority");
+
   const repeatLabel = document.createElement("label");
   const repeatCheck = document.createElement("input");
   repeatCheck.type = "checkbox";
@@ -107,7 +138,7 @@ function buildEditForm(task) {
     render();
   });
 
-  form.append(titleInput, dueInput, tagsInput, repeatLabel, save, cancel);
+  form.append(titleInput, dueInput, tagsInput, priorityInput, repeatLabel, save, cancel);
   return form;
 }
 
@@ -135,6 +166,7 @@ function renderTaskRow(task) {
     const due = parseDue(task.due || "");
     const tags = taskTags(task);
     const bits = [];
+    bits.push(priorityLabel(taskPriority(task)));
     if (isDailySeries(task)) bits.push("Daily");
     if (due) bits.push("Due " + due);
     if (tags.length) bits.push(tags.join(", "));
@@ -188,7 +220,7 @@ async function load() {
   render();
 }
 
-async function addTask(title, due, tags, repeatDaily) {
+async function addTask(title, due, tags, repeatDaily, priority) {
   const clean = normalizeTitle(title);
   if (!clean) return;
   await addTaskRecord({
@@ -197,11 +229,12 @@ async function addTask(title, due, tags, repeatDaily) {
     due: parseDue(due),
     tags: parseTags(tags),
     repeat: repeatDaily ? "daily" : "",
+    priority: parsePriority(priority),
   });
   await load();
 }
 
-async function saveSeriesEdit(id, titleInput, dueInput, tagsInput, repeatCheck) {
+async function saveSeriesEdit(id, titleInput, dueInput, tagsInput, repeatCheck, priorityInput) {
   const clean = normalizeTitle(titleInput.value);
   if (!clean) return;
   const existing = await getTaskRecord(id);
@@ -212,6 +245,7 @@ async function saveSeriesEdit(id, titleInput, dueInput, tagsInput, repeatCheck) 
     due: parseDue(dueInput.value),
     tags: parseTags(tagsInput.value),
     repeat: repeatCheck.checked ? "daily" : "",
+    priority: parsePriority(priorityInput.value),
   };
   await updateTaskRecord(updated);
   editingId = null;
@@ -246,11 +280,13 @@ document.getElementById("add-form").addEventListener("submit", async (event) => 
   const repeatDaily = document.getElementById("repeat-daily");
   try {
     showError(null);
-    await addTask(title.value, due.value, tags.value, repeatDaily.checked);
+    const priority = document.getElementById("priority");
+    await addTask(title.value, due.value, tags.value, repeatDaily.checked, priority.value);
     title.value = "";
     due.value = "";
     tags.value = "";
     repeatDaily.checked = false;
+    priority.value = "medium";
     title.focus();
   } catch (err) {
     showError(err);
@@ -259,4 +295,5 @@ document.getElementById("add-form").addEventListener("submit", async (event) => 
 
 document.getElementById("status-filter").addEventListener("change", render);
 document.getElementById("tag-filter").addEventListener("change", render);
+document.getElementById("priority-filter").addEventListener("change", render);
 load().catch(showError);
