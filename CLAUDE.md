@@ -21,4 +21,4 @@ When a project grows, add detail inside its folder. Update the row here. Do not 
 | --- | --- | --- |
 | Factory loop | `.cursor/skills/factory-loop/` | Picks up GitHub issues: clarify, plan and approval, implement on a feature branch, browser verify, open a PR and wait for manual review, then label `answered` and close. Factual tickets skip build/PR. See `SKILL.md`. |
 | Prompt log | `.cursor/hooks/` | On each agent stop, append new session prompts as JSONL (`log-prompts.ps1`) and commit plus push tracked changes (`commit-push.ps1`). |
-| Todo | `todo/` | Client-side todo list in IndexedDB. Add, mark done, delete, set a due date and tags, and filter by status or tag. Open `index.html`. |
+| Todo | `todo/` | Client-side todo in IndexedDB: filters, due dates, tags, daily recurrence (reset on complete), edit/delete series. Modules under `todo/lib/`; see `todo/IMPLEMENTATION.md`. Open `index.html` over HTTP. |
