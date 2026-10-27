@@ -22,6 +22,7 @@ test("parsePriority defaults to medium", () => {
 test("taskPriority reads stored field with default", () => {
   assert.equal(taskPriority({ priority: "high" }), "high");
   assert.equal(taskPriority({}), "medium");
+  assert.equal(taskPriority(null), "medium");
 });
 
 test("comparePriority sorts high then medium then low, then id", () => {
@@ -33,6 +34,7 @@ test("comparePriority sorts high then medium then low, then id", () => {
   ];
   const ordered = [...tasks].sort(comparePriority).map((t) => t.id);
   assert.deepEqual(ordered, [1, 3, 4, 2]);
+  assert.equal(comparePriority({ priority: "high" }, { priority: "high" }), 0);
 });
 
 test("matchesPriorityFilter", () => {
@@ -41,4 +43,5 @@ test("matchesPriorityFilter", () => {
   assert.equal(matchesPriorityFilter({ priority: "high" }, "high"), true);
   assert.equal(matchesPriorityFilter({ priority: "low" }, "high"), false);
   assert.equal(matchesPriorityFilter({}, "medium"), true);
+  assert.equal(matchesPriorityFilter({ priority: "medium" }, "urgent"), true);
 });

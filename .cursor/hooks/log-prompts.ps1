@@ -23,9 +23,32 @@ function Get-PromptText {
     $text = $chunks -join "`n"
     $found = [regex]::Matches($text, '(?s)<user_query>\s*(.*?)\s*</user_query>')
     if ($found.Count -gt 0) {
-        return $found[$found.Count - 1].Groups[1].Value.Trim()
+        return Protect-SecretText ($found[$found.Count - 1].Groups[1].Value.Trim())
     }
-    return $text.Trim()
+    return Protect-SecretText ($text.Trim())
+}
+
+function Protect-SecretText {
+    param([string]$Text)
+    if ([string]::IsNullOrEmpty($Text)) { return $Text }
+    $patterns = @(
+        'github_pat_[A-Za-z0-9_]+',
+        'ghp_[A-Za-z0-9]+',
+        'gho_[A-Za-z0-9]+',
+        'ghu_[A-Za-z0-9]+',
+        'ghs_[A-Za-z0-9]+',
+        'sk-[A-Za-z0-9]{10,}',
+        'AKIA[A-Z0-9]{16}',
+        'AIza[0-9A-Za-z_\-]{20,}',
+        'xox[baprs]-[A-Za-z0-9-]+',
+        '-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]+?-----END [A-Z ]*PRIVATE KEY-----',
+        '(?i)(api[_-]?key|secret|password|token)\s*[:=]\s*\S+'
+    )
+    $out = $Text
+    foreach ($pattern in $patterns) {
+        $out = [regex]::Replace($out, $pattern, '[REDACTED]')
+    }
+    return $out
 }
 
 try {

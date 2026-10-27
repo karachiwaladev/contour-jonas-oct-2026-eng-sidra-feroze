@@ -34,8 +34,18 @@ try {
         }
 
         git add -A 2>$null
-        foreach ($blocked in @('.env', '.env.local', 'credentials.json', '*.pem', '*.key')) {
+        foreach ($blocked in @('.env', '.env.local', '.env.*', 'credentials.json', '*.pem', '*.key', '*.p12', '*.pfx', 'id_rsa', 'id_ed25519', '*secret*', '*token*')) {
             git reset HEAD -- $blocked 2>$null | Out-Null
+        }
+
+        $secretHit = 'github_pat_|ghp_|gho_|ghu_|ghs_|sk-[A-Za-z0-9]{10,}|AKIA[A-Z0-9]{16}|AIza[0-9A-Za-z_\-]{20,}|xox[baprs]-|-----BEGIN [A-Z ]*PRIVATE KEY-----'
+        $staged = @(git diff --cached --name-only 2>$null | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+        foreach ($file in @($staged)) {
+            $blob = git show ":$file" 2>$null
+            if ($blob -match $secretHit) {
+                git reset HEAD -- $file 2>$null | Out-Null
+                [Console]::Error.WriteLine("Skipped staged secret-looking content: $file")
+            }
         }
 
         $staged = @(git diff --cached --name-only 2>$null | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })

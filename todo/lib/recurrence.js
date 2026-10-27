@@ -23,5 +23,5 @@ export function applyDailyComplete(task, todayISO) {
 }
 
 export function isDailySeries(task) {
-  return task && task.repeat === "daily";
+  return Boolean(task && task.repeat === "daily");
 }

@@ -1,3 +1,4 @@
+import { countOpenDone, formatTaskCounts } from "./lib/counts.js";
 import { applyDailyComplete, formatDateISO, isDailySeries } from "./lib/recurrence.js";
 import {
   comparePriority,
@@ -10,6 +11,7 @@ import {
   parseDue,
   parseRepeat,
   parseTags,
+  sanitizeTask,
   taskTags,
 } from "./lib/task-model.js";
 import {
@@ -202,6 +204,11 @@ function renderTaskRow(task) {
   return item;
 }
 
+function renderCounts() {
+  const node = document.getElementById("counts");
+  node.textContent = formatTaskCounts(countOpenDone(tasks));
+}
+
 function render() {
   fillTagFilter();
   const shown = visibleTasks();
@@ -213,10 +220,11 @@ function render() {
   for (const task of shown) {
     list.append(renderTaskRow(task));
   }
+  renderCounts();
 }
 
 async function load() {
-  tasks = await loadAllTasks();
+  tasks = (await loadAllTasks()).map(sanitizeTask);
   render();
 }
 
