@@ -28,6 +28,13 @@
     <input id="title" name="title" type="text" maxlength="200" required placeholder="New task" autocomplete="off">
     <input id="due" name="due" type="date" aria-label="Due date">
     <input id="tags" name="tags" type="text" maxlength="200" placeholder="Tags, comma separated" autocomplete="off">
+    <label>Priority
+      <select id="priority" name="priority" aria-label="Priority">
+        <option value="high">High</option>
+        <option value="medium" selected>Medium</option>
+        <option value="low">Low</option>
+      </select>
+    </label>
     <label><input id="repeat-daily" type="checkbox"> Repeats daily</label>
     <button type="submit">Add</button>
   </form>
@@ -42,6 +49,14 @@
     <label>Tag
       <select id="tag-filter">
         <option value="">All tags</option>
+      </select>
+    </label>
+    <label>Priority
+      <select id="priority-filter">
+        <option value="">All priorities</option>
+        <option value="high">High</option>
+        <option value="medium">Medium</option>
+        <option value="low">Low</option>
       </select>
     </label>
   </div>
