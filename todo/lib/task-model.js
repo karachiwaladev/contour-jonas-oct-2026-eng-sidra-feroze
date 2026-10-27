@@ -1,10 +1,23 @@
 /** Task field parsing and normalization (pure). */
 
+const CONTROL = /[\u0000-\u001F\u007F]/g;
+
+function sanitizeText(value, max) {
+  return String(value || "")
+    .replace(CONTROL, "")
+    .replace(/[<>]/g, "")
+    .trim()
+    .slice(0, max);
+}
+
 export function parseTags(value) {
   const seen = new Set();
   const tags = [];
-  for (const part of String(value || "").split(",")) {
-    const tag = part.trim().slice(0, 40);
+  const raw = Array.isArray(value)
+    ? value.filter((item) => typeof item === "string").join(",")
+    : String(value || "");
+  for (const part of raw.split(",")) {
+    const tag = sanitizeText(part, 40);
     const key = tag.toLowerCase();
     if (!tag || seen.has(key)) continue;
     seen.add(key);
@@ -23,10 +36,22 @@ export function parseRepeat(value) {
 }
 
 export function taskTags(task) {
-  return Array.isArray(task.tags) ? task.tags.filter((tag) => typeof tag === "string") : [];
+  return parseTags(Array.isArray(task && task.tags) ? task.tags : []);
 }
 
 export function normalizeTitle(value) {
-  const clean = String(value || "").trim().slice(0, 200);
-  return clean;
+  return sanitizeText(value, 200);
+}
+
+export function sanitizeTask(task) {
+  const row = task && typeof task === "object" ? task : {};
+  return {
+    ...row,
+    title: normalizeTitle(row.title),
+    tags: parseTags(row.tags),
+    due: parseDue(row.due),
+    repeat: parseRepeat(row.repeat),
+    priority: ["high", "medium", "low"].includes(row.priority) ? row.priority : "medium",
+    done: Boolean(row.done),
+  };
 }
