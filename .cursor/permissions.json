@@ -1,0 +1,10 @@
+{
+  "autoRun": {
+    "block_instructions": [
+      "Block recursive force-deletes: rm -rf, rm -fr, and Remove-Item -Recurse -Force.",
+      "Block git push --force and git push -f.",
+      "Block curl or wget piped to sh, bash, or zsh.",
+      "Block reading .env files (.env, .env.local, other secret .env.*). .env.example is allowed."
+    ]
+  }
+}
