@@ -1,6 +1,14 @@
 {
   "version": 1,
   "hooks": {
+    "preToolUse": [
+      {
+        "command": ".claude/hooks/block-dangerous.ps1",
+        "matcher": "Bash|PowerShell|Read|Shell",
+        "failClosed": true,
+        "timeout": 15
+      }
+    ],
     "stop": [
       {
         "command": ".cursor/hooks/log-prompts.ps1",
