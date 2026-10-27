@@ -85,7 +85,7 @@ Use a **feature branch** for the ticket (for example `issue-<n>-short-slug`), no
 
 ### 5. Run and verify in the browser
 
-Use the Cursor browser MCP (Chrome DevTools-backed): navigate, interact, snapshot, `browser_take_screenshot`, and `browser_cdp` when you need DOM or runtime checks.
+Use the Cursor browser MCP (Chrome DevTools-backed): navigate, interact, snapshot, `browser_take_screenshot`, and `browser_cdp` when you need DOM or runtime checks. For any UI change, also run the `old-mcdonald` persona check (`.claude/skills/old-mcdonald/SKILL.md`) and put its table in the PR comment.
 
 - Static HTML under `todo/` or similar: serve over `http://127.0.0.1:<port>/` (for example a short `node` static server). `file://` is blocked in the automation browser.
 - Exercise the paths the ticket cares about: create, update, filter, persist after reload, error cases when relevant.

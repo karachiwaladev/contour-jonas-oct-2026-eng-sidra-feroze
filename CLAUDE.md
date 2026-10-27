@@ -21,4 +21,5 @@ When a project grows, add detail inside its folder. Update the row here. Do not 
 | --- | --- | --- |
 | Factory loop | `.cursor/skills/factory-loop/` | Picks up GitHub issues: clarify, plan and approval, implement on a feature branch, browser verify, open a PR and wait for manual review, then label `answered` and close. Factual tickets skip build/PR. See `SKILL.md`. |
 | Prompt log | `.cursor/hooks/` | On each agent stop, append new session prompts as JSONL (`log-prompts.ps1`) and commit plus push tracked changes (`commit-push.ps1`). |
+| Old McDonald | `.claude/skills/old-mcdonald/` | UX test persona: an older user with little tech exposure. Factory-loop §5 runs its checks (200% zoom, 44px targets, plain labels, safe delete, reload) on every UI change. See `SKILL.md`. |
 | Todo | `todo/` | Client-side todo in IndexedDB: filters, due dates, tags, priority (filter + sort), daily recurrence (reset on complete), edit/delete series. Modules under `todo/lib/`; see `todo/IMPLEMENTATION.md`. Open `index.html` over HTTP. |
